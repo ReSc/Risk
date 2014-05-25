@@ -1,0 +1,129 @@
+﻿@using System.Drawing
+@using Risk.Models.Actions
+@model Risk.Models.Board
+
+@{
+    ViewBag.Title = "Risk";
+}
+
+<html>
+<head>
+    <link rel="stylesheet" href="~/Index.css" type="text/css" />
+    <title>
+        Risk
+    </title>
+</head>
+    <body>
+        
+        @foreach (var country in Model.Countries)
+        {
+            string inlineCSS = string.Format(@"background-color: white;
+                                           left: {1}px;
+                                           top: {2}px;
+                                           border-color: {3}",
+                country.Owner.Color, country.XPositionOnBoard, country.YPositionOnBoard, country.Owner.Color);
+
+            <div class="troopsMarker" style="@inlineCSS">@country.NumberOfTroops</div>
+        }
+
+        <div class="gameHolder">
+            <div class="riskImageDiv">
+                <svg height="628" width="1227">
+                    @foreach (var attackAction in Model.Actions.Where(a => a.ShowOnMap && a is AttackAction).Cast<AttackAction>())
+                    {
+                        <line x1="@attackAction.Country.XPositionOnBoard" y1="@attackAction.Country.YPositionOnBoard"
+                                x2="@attackAction.CountryToAttack.XPositionOnBoard" y2="@attackAction.CountryToAttack.YPositionOnBoard"
+                                style="stroke:@attackAction.Player.Color;stroke-width:10" />
+                        <ellipse cx="@(attackAction.CountryToAttack.XPositionOnBoard + 18)" cy="@(attackAction.CountryToAttack.YPositionOnBoard + 7)"
+                                    rx="40" ry="20" style="fill: white; stroke:@attackAction.Player.Color; stroke-width: 2" />
+                    }
+                </svg>
+
+                @foreach (var action in Model.Actions.Where(a => a.ShowOnMap))
+                {
+                    var deployAction = action as DeployAction;
+
+                    if (deployAction != null)
+                    {
+                        <div class="deployedTroops" style="@string.Format("left:{0}px;top:{1}px",
+                                                            deployAction.CountryToDeploy.XPositionOnBoard,
+                                                            deployAction.CountryToDeploy.YPositionOnBoard - 20)">
+                            @string.Format("+{0}", @deployAction.NumberOfAddedTroops)
+                        </div>
+                    }
+
+                    var attackAction = action as AttackAction;
+
+                    if (attackAction != null)
+                    {
+                        <div class="attackingTroops" style="@string.Format("left:{0}px;top:{1}px",
+                            attackAction.CountryToAttack.XPositionOnBoard - 10,
+                            attackAction.CountryToAttack.YPositionOnBoard - 22)">
+                            @string.Format("{0}/{2} -- {1}/{3}", attackAction.Attackers, attackAction.Defenders, attackAction.DeadAttackers, @attackAction.DeadDefenders)
+                        </div>
+                    }
+
+                    var moveAction = action as MoveAction;
+
+                    if (moveAction != null)
+                    {
+                        <div class="moveTroops" style="@string.Format("left:{0}px;top:{1}px",
+                                                               moveAction.Country.XPositionOnBoard + 0,
+                                                               moveAction.Country.YPositionOnBoard + 25)">
+                            @string.Format("-{0}", @moveAction.NumberOfTroopsToMove)
+                        </div>
+
+                        <div class="moveTroops" style="@string.Format("left:{0}px;top:{1}px",
+                                                  moveAction.CountryToMoveTo.XPositionOnBoard + 35,
+                                                  moveAction.CountryToMoveTo.YPositionOnBoard + 25)">
+                            @string.Format("+{0}", @moveAction.NumberOfTroopsToMove)
+                        </div>
+                    }
+                }
+
+            </div>
+
+            <div class="actionLog">
+                @for (int index = Model.Actions.Count > 30 ? Model.Actions.Count -30 : 0; index < Model.Actions.Count; index++)
+                {
+                    var action = Model.Actions[index];
+                    <p>@action.GetMessage()</p>
+                }
+            </div> 
+        </div>
+        
+        <div class="players">
+            @foreach (var player in Model.Players)
+            {
+                <p>@player.Name - @Model.Countries.Count(c => c.Owner == player)</p>
+            }
+        </div>
+        
+        @if (Model.ActivePlayer != null)
+        {
+            <div class="turnInfo">
+                Turn @Model.Turn <br/> 
+                Current: @Model.LastPlayer.Name - @Model.LastPhase <br /> 
+                Next: @Model.ActivePlayer.Name - @Model.NextPhase
+            </div>
+        }
+
+        <div class="buttons">
+            <input type="button" title="Next" value="Next phase" onclick="location.href='@Url.Action("NextPhase", "Home")'" />
+            <input type="button" title="Next" value="Next turn" onclick="location.href='@Url.Action("NextTurn", "Home")'" />
+            <input type="button" title="Next" value="Skip startup" onclick="location.href='@Url.Action("SkipStartUpPhase", "Home")'" />
+            <input type="button" title="Next" value="New Game" onclick="location.href='@Url.Action("NewGame", "Home")'" />
+            <input type="button" title="Next" value="End Game" onclick="location.href='@Url.Action("EndGame", "Home")'" />
+        </div>
+    
+        <div class="wins">
+            @foreach (var playerWithWins in Model.TimesWonByPlayers)
+            {
+                <p>@playerWithWins.Key - @playerWithWins.Value</p>
+            }
+        </div>
+
+    </body>
+</html>
+
+

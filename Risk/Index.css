@@ -1,0 +1,118 @@
+﻿.gameHolder
+{
+    width: 2200px;
+}
+
+.riskImageDiv {
+    float: left;
+    display: inline-block;
+    width:1200px; 
+    height:628px; 
+    background-image: url(Risk_map.png);
+}
+
+.actionLog {
+    width: 1000px;
+    float: right;
+    font-family: tahoma;
+    font-size: 10pt;
+    line-height: 50%;
+}
+
+.troopsMarker{
+    position: absolute;
+    background-color: white;
+    width: 40px;
+    height: 20px;
+    text-align: center;
+    border: 6px solid;
+    border-radius:10px;
+    border-color: black;
+    font-weight: bold;
+    font-size: 14pt;
+}
+
+.deployedTroops {
+    position: absolute;
+    background-color: white;
+    width: 30px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid;
+    border-radius:1px;
+    border-color: black;
+    font-weight: bold;
+    font-size: 14pt;
+    color: black;
+}
+
+.moveTroops {
+    position: absolute;
+    background-color: white;
+    width: 30px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid;
+    border-radius:1px;
+    border-color: black;
+    font-weight: bold;
+    font-size: 14pt;
+    color: red;
+}
+
+.attackingTroops {
+    position: absolute;
+    background-color: white;
+    width: 100px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid;
+    border-radius:1px;
+    border-color: black;
+    font-weight: bold;
+    font-size: 14pt;
+    color: black;
+}
+
+.buttons {
+    position: absolute;
+    width: 1000px;
+    height: 100px;
+    left: 50px;
+    top: 650px;
+    background-color: white;
+}
+
+.players {
+    position: absolute;
+    width: 200px;
+    height: 300px;
+    left: 10px;
+    top: 450px;
+    background-color: white;
+    font-family: tahoma;
+    font-size: 10pt;
+    line-height: 50%;
+}
+
+.turnInfo {
+    position: absolute;
+    width: 350px;
+    height: 200px;
+    left: 522px;
+    top: 533px;
+    background-color: white;
+    font-family: tahoma;
+    font-size: 12pt;
+    line-height: 150%;
+}
+
+
+.wins {
+    position: absolute;
+    width: 1000px;
+    height: 500px;
+    left: 50px;
+    top: 750px;
+    background-color: white;
+}
