@@ -438,7 +438,9 @@ namespace Risk.Players
                     dangerlevel++;
                 }
 
-                if (attackRolls[1] >= 5)
+                // bug here, there can be only 1 attack roll
+                // Remco: added check for attack roll count
+                if (attackRolls.Count>1 && attackRolls[1] >= 5)
                 {
                     dangerlevel++;
                 }
