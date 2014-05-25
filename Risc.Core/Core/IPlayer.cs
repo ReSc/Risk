@@ -8,10 +8,10 @@ namespace Risk.Core
         string Name { get; }
         string Color { get; }
 
-        void Deploy(GameManager gameManager, int numberOfTroops);
-        void Attack(GameManager gameManager);
-        void Move(GameManager gameManager);
+        void Deploy(TurnManager turnManager, int numberOfTroops);
+        void Attack(TurnManager turnManager);
+        void Move(TurnManager turnManager);
 
-        int Defend(GameManager gameManager, List<int> attackRolls, Country countryToDefend);
+        int Defend(TurnManager turnManager, List<int> attackRolls, Country countryToDefend);
     }
 }

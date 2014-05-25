@@ -8,7 +8,7 @@ namespace Risk.Core
 {
     public class GameManager
     {
-        public static readonly Statistics Statistics;
+        private  readonly Statistics Statistics;
 
         public List<IAction> Actions { get; private set; }
         public List<Country> Countries { get; private set; }
@@ -31,18 +31,10 @@ namespace Risk.Core
         public int MaximumAmountOfTurns { get; private set; }
         public int CountriesRequiredToWin { get; private set; }
         public IList<IPlayer> Players { get; private set; }
+        public int Turn { get; private set; }
+        public bool GameEnded { get;private  set; }
 
-        public int Turn { get; set; }
-
-
-        public bool GameEnded { get; set; }
-
-        static GameManager()
-        {
-            Statistics = new Statistics();
-        }
-
-        public GameManager(Settings settings, bool init = true)
+        public GameManager(Statistics statistics, Settings settings, bool init = true)
         {
             Turn = 0;
             GameEnded = false;
@@ -50,7 +42,172 @@ namespace Risk.Core
             Actions = new List<IAction>();
             Log = new ActionLogger(this);
             Countries = new TerrainGenerator().Generate();
+            Statistics = statistics;
             if (init) Initialize(settings);
+        }
+
+        public void DoStartupPhase()
+        {
+            Actions.ForEach(action => action.ShowOnMap = false);
+
+            var troopsInStartupPhase = 0;
+
+            do
+            {
+                troopsInStartupPhase = GetTroopsInStartupPhase();
+
+                if (troopsInStartupPhase > 0)
+                {
+                    TroopsToDeploy = troopsInStartupPhase;
+
+                    try
+                    {
+                        var turnManager = GetTurnManager(CurrentPlayer);
+                        CurrentPlayer.Deploy(turnManager, troopsInStartupPhase);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.AddException(e);
+                    }
+
+                    SetNextPlayer();
+                }
+            } while (troopsInStartupPhase != 0);
+        }
+
+        public void DoNextTurn()
+        {
+            var activePlayerName = CurrentPlayer.Name;
+            ClearActions();
+
+            do
+            {
+                DoNextPhase(false);
+            } while (activePlayerName == CurrentPlayer.Name && !GameEnded);
+        }
+
+        public void DoNextPhase(bool eraseActions = true)
+        {
+            if (GameEnded) return;
+
+            if (eraseActions)
+            {
+                ClearActions();
+            }
+
+            var troopsInStartupPhase = GetTroopsInStartupPhase();
+
+            var turnManager = GetTurnManager(CurrentPlayer);
+            if (troopsInStartupPhase > 0)
+            {
+                TroopsToDeploy = troopsInStartupPhase;
+                try
+                {
+                    CurrentPlayer.Deploy(turnManager, troopsInStartupPhase);
+                }
+                catch (Exception e)
+                {
+                    Log.AddException(e);
+                }
+                SetNextPlayer();
+            }
+            else
+            {
+                if (CurrentPhase == EPhase.Deploy)
+                {
+                    if (CurrentPlayer == startPlayer)
+                    {
+                        Turn++;
+
+                        if (Turn > MaximumAmountOfTurns)
+                        {
+                            var winner = GetPlayerWithMostCountries();
+                            Log.AddMessage(
+                                string.Format("----- {0} has won the game with {1} countries, turn limit reached",
+                                              winner.Name,
+                                              turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(winner).Count));
+                            Statistics.AddCurrentGameResults(winner);
+                            GameEnded = true;
+                            return;
+                        }
+                    }
+
+                    var troopsToDeploy = new DeploymentCounter(CurrentPlayer, turnManager.GetGameInfo()).GetTroopsToDeploy();
+                    Log.AddGameInfo(CurrentPhase, troopsToDeploy);
+                    TroopsToDeploy = troopsToDeploy;
+
+                    try
+                    {
+                        CurrentPlayer.Deploy(turnManager, troopsToDeploy);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.AddException(e);
+                    }
+                }
+                else if (CurrentPhase == EPhase.Attack)
+                {
+                    Log.AddGameInfo(CurrentPhase);
+
+                    try
+                    {
+                        CurrentPlayer.Attack(turnManager);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.AddException(e);
+                    }
+
+                    if (PlayerHasWon())
+                    {
+                        Log.AddMessage(string.Format("----- {0} has won the game with {1} countries", CurrentPlayer.Name,
+                                                     turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(CurrentPlayer).Count));
+                        Statistics.AddCurrentGameResults(CurrentPlayer);
+                        GameEnded = true;
+                        return;
+                    }
+                }
+                else if (CurrentPhase == EPhase.Move)
+                {
+                    Log.AddGameInfo(CurrentPhase);
+                    TroopsToMove = 7;
+
+                    try
+                    {
+                        CurrentPlayer.Move(turnManager);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.AddException(e);
+                    }
+
+                    SetNextPlayer();
+                }
+
+                SetNextPhase();
+            }
+        }
+
+        public List<int> GetDiceRolls(int number)
+        {
+            var rolls = new List<int>();
+
+            for (var i = 0; i < number; i++)
+            {
+                rolls.Add(rnd.Next(1, 7));
+            }
+
+            return rolls;
+        }
+
+        internal TurnManager GetTurnManager(IPlayer player)
+        {
+            return new TurnManager(player, this);
+        }
+
+        internal GameInformation GetGameInfo()
+        {
+            return new GameInformation(this);
         }
 
         private void Initialize(Settings settings)
@@ -110,45 +267,6 @@ namespace Risk.Core
             CurrentPlayer = startPlayer;
         }
 
-        public void DoStartupPhase()
-        {
-            Actions.ForEach(action => action.ShowOnMap = false);
-
-            var troopsInStartupPhase = 0;
-
-            do
-            {
-                troopsInStartupPhase = GetTroopsInStartupPhase();
-
-                if (troopsInStartupPhase > 0)
-                {
-                    TroopsToDeploy = troopsInStartupPhase;
-
-                    try
-                    {
-                        CurrentPlayer.Deploy(this, troopsInStartupPhase);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.AddException(e);
-                    }
-
-                    SetNextPlayer();
-                }
-            } while (troopsInStartupPhase != 0);
-        }
-
-        public void DoNextTurn()
-        {
-            var activePlayerName = CurrentPlayer.Name;
-            ClearActions();
-
-            do
-            {
-                DoNextPhase(false);
-            } while (activePlayerName == CurrentPlayer.Name && !GameEnded);
-        }
-
         private void ClearActions()
         {
             Actions.ForEach(action => action.ShowOnMap = false);
@@ -158,7 +276,7 @@ namespace Risk.Core
         {
             var playerWithMostCountries = CurrentPlayer;
             var count = 0;
-            var gameInfo = new GameInformation(this);
+            var gameInfo = GetGameInfo();
 
             foreach (var player in Players)
             {
@@ -174,111 +292,9 @@ namespace Risk.Core
             return playerWithMostCountries;
         }
 
-        public void DoNextPhase(bool eraseActions = true)
-        {
-            if (GameEnded) return;
-
-            if (eraseActions)
-            {
-                ClearActions();
-            }
-
-            var troopsInStartupPhase = GetTroopsInStartupPhase();
-
-            if (troopsInStartupPhase > 0)
-            {
-                TroopsToDeploy = troopsInStartupPhase;
-                try
-                {
-                    CurrentPlayer.Deploy(this, troopsInStartupPhase);
-                }
-                catch (Exception e)
-                {
-                    Log.AddException(e);
-                }
-                SetNextPlayer();
-            }
-            else
-            {
-                if (CurrentPhase == EPhase.Deploy)
-                {
-                    if (CurrentPlayer == startPlayer)
-                    {
-                        Turn++;
-
-                        if (Turn > MaximumAmountOfTurns)
-                        {
-                            var winner = GetPlayerWithMostCountries();
-                            Log.AddMessage(
-                                string.Format("----- {0} has won the game with {1} countries, turn limit reached",
-                                              winner.Name,
-                                              new GameInformation(this).GetAllCountriesOwnedByPlayer(winner).Count));
-                            Statistics.AddCurrentGameResults(winner);
-                            GameEnded = true;
-                            return;
-                        }
-                    }
-
-                    var troopsToDeploy = new DeploymentCounter(CurrentPlayer, this).GetTroopsToDeploy();
-                    Log.AddGameInfo(CurrentPhase, troopsToDeploy);
-                    TroopsToDeploy = troopsToDeploy;
-
-                    try
-                    {
-                        CurrentPlayer.Deploy(this, troopsToDeploy);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.AddException(e);
-                    }
-                }
-                else if (CurrentPhase == EPhase.Attack)
-                {
-                    Log.AddGameInfo(CurrentPhase);
-
-                    try
-                    {
-                        CurrentPlayer.Attack(this);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.AddException(e);
-                    }
-
-                    if (PlayerHasWon())
-                    {
-                        Log.AddMessage(string.Format("----- {0} has won the game with {1} countries", CurrentPlayer.Name,
-                                                     new GameInformation(this).GetAllCountriesOwnedByPlayer(
-                                                         CurrentPlayer).Count));
-                        Statistics.AddCurrentGameResults(CurrentPlayer);
-                        GameEnded = true;
-                        return;
-                    }
-                }
-                else if (CurrentPhase == EPhase.Move)
-                {
-                    Log.AddGameInfo(CurrentPhase);
-                    TroopsToMove = 7;
-
-                    try
-                    {
-                        CurrentPlayer.Move(this);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.AddException(e);
-                    }
-
-                    SetNextPlayer();
-                }
-
-                SetNextPhase();
-            }
-        }
-
         private bool PlayerHasWon()
         {
-            return new GameInformation(this).GetAllCountriesOwnedByPlayer(CurrentPlayer).Count >=
+            return GetGameInfo().GetAllCountriesOwnedByPlayer(CurrentPlayer).Count >=
                    CountriesRequiredToWin;
         }
 
@@ -316,19 +332,8 @@ namespace Risk.Core
 
         private bool PlayerIsAlive(IPlayer player)
         {
-            return new GameInformation(this).GetAllCountriesOwnedByPlayer(player).Any();
+            return GetGameInfo().GetAllCountriesOwnedByPlayer(player).Any();
         }
 
-        public List<int> GetDiceRolls(int number)
-        {
-            var rolls = new List<int>();
-
-            for (var i = 0; i < number; i++)
-            {
-                rolls.Add(rnd.Next(1, 7));
-            }
-
-            return rolls;
-        }
     }
 }

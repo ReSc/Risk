@@ -8,10 +8,10 @@ namespace Risk.Core
         private readonly GameInformation gameInformation;
         private readonly IPlayer player;
 
-        public DeploymentCounter(IPlayer player, GameManager gameManager)
+        public DeploymentCounter(IPlayer player, GameInformation gameInformation)
         {
             this.player = player;
-            gameInformation = new GameInformation(gameManager);
+            this .gameInformation = gameInformation;
         }
 
 

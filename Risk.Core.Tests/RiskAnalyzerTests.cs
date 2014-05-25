@@ -7,12 +7,14 @@ namespace Risk.Core.Tests
     [TestFixture]
     public class RiskAnalyzerTests
     {
-        private GameManager _game;
+        private GameManager game;
 
         [SetUp]
         public void setup()
         {
             // only play against pro's, we're competitive like that ;-)
+
+            var statistics = new Statistics();
             var settings = new Settings(new IPlayer[]
                 {
                     new Remco(),
@@ -22,7 +24,8 @@ namespace Risk.Core.Tests
                     new Pros()
                 }, 25, 100);
 
-            _game = new GameManager(settings);
+            game = new GameManager(statistics, settings, init: false);
+
 
         }
     }

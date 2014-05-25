@@ -37,19 +37,19 @@ namespace Risk.Players.RS
         public string Name { get; private set; }
         public string Color { get; private set; }
 
-        public void Deploy(GameManager gameManager, int numberOfTroops)
+        public void Deploy(TurnManager turnManager, int numberOfTroops)
         {
-            var analysis = _riskAnalyzer.Analyze(gameManager, new GameInformation(gameManager));
+            var analysis = _riskAnalyzer.Analyze(turnManager);
             analysis.ExecuteDeployments(numberOfTroops);
         }
 
-        public void Attack(GameManager gameManager)
+        public void Attack(TurnManager turnManager)
         {
             var losses = 0;
 
             while (losses <= 3)
             {
-                var analysis = _riskAnalyzer.Analyze(gameManager, new GameInformation(gameManager));
+                var analysis = _riskAnalyzer.Analyze(turnManager);
                 if (analysis.Attacks.Count == 0)
                     return;
 
@@ -58,15 +58,15 @@ namespace Risk.Players.RS
             }
         }
 
-        public void Move(GameManager gameManager)
+        public void Move(TurnManager turnManager)
         {
-            var analysis = _riskAnalyzer.Analyze(gameManager, new GameInformation(gameManager));
+            var analysis = _riskAnalyzer.Analyze(turnManager);
             analysis.ExecuteMoves();
         }
 
-        public int Defend(GameManager gameManager, List<int> attackRolls, Country countryToDefend)
+        public int Defend(TurnManager turnManager, List<int> attackRolls, Country countryToDefend)
         {
-            var analysis = _riskAnalyzer.Analyze(gameManager, new GameInformation(gameManager));
+            var analysis = _riskAnalyzer.Analyze(turnManager);
             return analysis.GetDefenceRolls(attackRolls, countryToDefend);
         }
     }

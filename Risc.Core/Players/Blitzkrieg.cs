@@ -22,18 +22,18 @@ namespace Risk.Players
         }
 
 
-        public void Deploy(GameManager gameManager, int numberOfTroops)
+        public void Deploy(TurnManager turnManager, int numberOfTroops)
         {
-            DetermineOwnershipPercentageForContinents(gameManager);
+            DetermineOwnershipPercentageForContinents(turnManager);
             var preferencedContinent = GetPreferencedContinent();
             var countriesInPreferencedContinent =
-                new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this)
+                turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this)
                                                 .Where(x => x.Continent.Equals(preferencedContinent))
                                                 .ToList();
 
             var frontierCountries = (from frontierCountry in countriesInPreferencedContinent
                                      let enemyCountries =
-                                         new GameInformation(gameManager)
+                                         turnManager.GetGameInfo()
                                          .GetAdjacentCountriesWithDifferentOwner(frontierCountry)
                                      where enemyCountries.Any()
                                      orderby enemyCountries.Count
@@ -45,13 +45,13 @@ namespace Risk.Players
             {
                 var countryIndex = randomizer.Next(frontierCountries.Count());
                 var country = frontierCountries[countryIndex];
-                new TurnManager(this, gameManager).DeployTroops(country, 1);
+                turnManager.DeployTroops(country, 1);
 
                 troopsLeft--;
             }
         }
 
-        public void Attack(GameManager gameManager)
+        public void Attack(TurnManager turnManager)
         {
             /// [Wil je aanvallen?]
             /// 1. Als je maar net genoeg troepen hebt om je continent te verdedigen, niet of beperkt aanvallen.
@@ -65,13 +65,13 @@ namespace Risk.Players
             {
                 var preferencedContinent = GetPreferencedContinent();
                 var ourCountries =
-                    new GameInformation(gameManager).GetAllCountries()
+                    turnManager.GetGameInfo().GetAllCountries()
                                                     .Where(
                                                         x => x.Continent.Equals(preferencedContinent) && x.Owner == this);
 
                 var adjecentEnemies = from ourCountry in ourCountries
                                       let enemyCountries =
-                                          new GameInformation(gameManager).GetAdjacentCountriesWithDifferentOwner(
+                                          turnManager.GetGameInfo().GetAdjacentCountriesWithDifferentOwner(
                                               ourCountry)
                                       select
                                           new
@@ -89,7 +89,7 @@ namespace Risk.Players
                     foreach (var roundOfAttack in adjecentEnemies.Where(x => x.EnemyCountry != null))
                     {
                         if (
-                            !new TurnManager(this, gameManager).Attack(roundOfAttack.OurCountry,
+                            !turnManager.Attack(roundOfAttack.OurCountry,
                                                                        roundOfAttack.EnemyCountry,
                                                                        roundOfAttack.OurCountry.NumberOfTroops - 1))
                         {
@@ -102,7 +102,7 @@ namespace Risk.Players
                         }
                     }
 
-                    ourCountries = new GameInformation(gameManager).GetAllCountries()
+                    ourCountries = turnManager.GetGameInfo().GetAllCountries()
                                                                    .Where(
                                                                        x =>
                                                                        x.Continent.Equals(preferencedContinent) &&
@@ -110,7 +110,7 @@ namespace Risk.Players
 
                     adjecentEnemies = from ourCountry in ourCountries
                                       let enemyCountries =
-                                          new GameInformation(gameManager).GetAdjacentCountriesWithDifferentOwner(
+                                          turnManager.GetGameInfo().GetAdjacentCountriesWithDifferentOwner(
                                               ourCountry)
                                       select
                                           new
@@ -128,15 +128,15 @@ namespace Risk.Players
             }
         }
 
-        public void Move(GameManager gameManager)
+        public void Move(TurnManager turnManager)
         {
             var countries =
-                new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this)
+                turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this)
                                                 .OrderByDescending(x => x.NumberOfTroops);
 
             var frontierCountries = from frontierCountry in countries
                                     let enemyCountries =
-                                        new GameInformation(gameManager)
+                                        turnManager.GetGameInfo()
                                         .GetAdjacentCountriesWithDifferentOwner(frontierCountry)
                                     where enemyCountries.Any()
                                     orderby enemyCountries.Count
@@ -160,14 +160,14 @@ namespace Risk.Players
                 var countryIndex = randomizer.Next(0, frontierCountryFriendsWithoutEnemy.Friends.Count());
                 if (frontierCountryFriendsWithoutEnemy.Friends.Any())
                 {
-                    new TurnManager(this, gameManager).MoveTroops(
+                   turnManager.MoveTroops(
                         frontierCountryFriendsWithoutEnemy.Friends.ToList()[countryIndex],
                         frontierCountryFriendsWithoutEnemy.FrontierCountry, 1);
                 }
             }
         }
 
-        public int Defend(GameManager gameManager, List<int> attackRolls, Country countryToDefend)
+        public int Defend(TurnManager turnManager, List<int> attackRolls, Country countryToDefend)
         {
             return attackRolls.Sum() > 10 ? 1 : 2;
         }
@@ -184,17 +184,17 @@ namespace Risk.Players
             return continent;
         }
 
-        private void DetermineOwnershipPercentageForContinents(GameManager gameManager)
+        private void DetermineOwnershipPercentageForContinents(TurnManager turnManager)
         {
             continentsOwnership = new Dictionary<EContinent, double>();
             foreach (
                 var uniqueContinent in
-                    new GameInformation(gameManager).GetAllCountries().Select(x => x.Continent).Distinct())
+                    turnManager.GetGameInfo().GetAllCountries().Select(x => x.Continent).Distinct())
             {
                 double numberOfCountriesInContinent =
-                    new GameInformation(gameManager).GetAllCountries().Count(x => x.Continent.Equals(uniqueContinent));
+                    turnManager.GetGameInfo().GetAllCountries().Count(x => x.Continent.Equals(uniqueContinent));
                 double ourNumberOfCountriesInContinent =
-                    new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this)
+                    turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this)
                                                     .Count(x => x.Continent.Equals(uniqueContinent));
                 var ownershipPercentage = (ourNumberOfCountriesInContinent/numberOfCountriesInContinent)*100;
 

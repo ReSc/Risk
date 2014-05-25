@@ -35,7 +35,7 @@ namespace Risk.Core
 
         public int GetNumberOfUnitsToDeploy(IPlayer player)
         {
-            return new DeploymentCounter(player, gameManager).GetTroopsToDeploy();
+            return new DeploymentCounter(player, this).GetTroopsToDeploy();
         }
     }
 }

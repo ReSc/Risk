@@ -9,13 +9,16 @@ namespace Risk.Core
     {
         private readonly GameManager gameManager;
         private readonly IPlayer player;
-        private readonly Random r;
 
         public TurnManager(IPlayer player, GameManager gameManager)
         {
             this.gameManager = gameManager;
             this.player = player;
-            r = new Random();
+        }
+
+        public GameInformation GetGameInfo()
+        {
+            return gameManager.GetGameInfo();
         }
 
         public void DeployTroops(Country country, int numberOfTroops)
@@ -67,9 +70,8 @@ namespace Risk.Core
 
                 try
                 {
-                    numberOfDiceToDefendWith = countryToAttack.Owner.Defend(gameManager,
-                                                                            attackRolls.GetRange(0, attackRolls.Count),
-                                                                            countryToAttack);
+                    var defenceTurnManager = gameManager.GetTurnManager(countryToAttack.Owner);
+                    numberOfDiceToDefendWith = countryToAttack.Owner.Defend(defenceTurnManager, attackRolls.GetRange(0, attackRolls.Count), countryToAttack);
 
                     if (numberOfDiceToDefendWith > 2 || numberOfDiceToDefendWith < 1 ||
                         countryToAttack.NumberOfTroops == 1)

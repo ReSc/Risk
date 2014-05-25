@@ -62,7 +62,7 @@ namespace Risk.Controllers
                 ActivePlayer = gameManager.CurrentPlayer,
                 Players = gameManager.Players.ToList(),
                 GameEnded = gameManager.GameEnded,
-                TimesWonByPlayers = RiskContext.Get().TimesWonByPlayer,
+                TimesWonByPlayers = RiskContext.GetStats().TimesWonByPlayer,
                 Turn = gameManager.Turn,
                 LastPhase = gameManager.LastPhase,
                 LastPlayer = gameManager.LastPhase == EPhase.Move ? gameManager.LastPlayer : gameManager.CurrentPlayer 

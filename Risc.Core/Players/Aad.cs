@@ -20,20 +20,20 @@ namespace Risk.Players
             get { return "YELLOW"; }
         }
 
-        public void Deploy(GameManager gameManager, int numberOfTroops)
+        public void Deploy(TurnManager turnManager, int numberOfTroops)
         {
             while (numberOfTroops > 0)
             {
-                new TurnManager(this, gameManager).DeployTroops(GetMostImportantCountry(gameManager), 1);
+                turnManager.DeployTroops(GetMostImportantCountry(turnManager), 1);
                 numberOfTroops--;
             }
         }
 
-        public void Attack(GameManager gameManager)
+        public void Attack(TurnManager turnManager)
         {
             for (var i = 1; i < 250; i++)
             {
-                var possibleAttacks = GetAllPossibleAttacks(gameManager);
+                var possibleAttacks = GetAllPossibleAttacks(turnManager);
 
                 foreach (var possibleAttack in possibleAttacks)
                 {
@@ -44,7 +44,7 @@ namespace Risk.Players
 
                 var riskRate = 900;
 
-                if (IsLastEnemyInContinent(myAttack.Victim, gameManager))
+                if (IsLastEnemyInContinent(turnManager, myAttack.Victim))
                 {
                     riskRate = 400;
                 }
@@ -55,15 +55,15 @@ namespace Risk.Players
                     return;
                 }
 
-                new TurnManager(this, gameManager).Attack(myAttack.MyCountry, myAttack.Victim, myAttack.NumberOfTroops);
+                turnManager.Attack(myAttack.MyCountry, myAttack.Victim, myAttack.NumberOfTroops);
             }
         }
 
-        public void Move(GameManager gameManager)
+        public void Move(TurnManager turnManager)
         {
             for (var i = 0; i < 250; i++)
             {
-                var info = new GameInformation(gameManager);
+                var info = turnManager.GetGameInfo();
                 foreach (var country in info.GetAllCountriesOwnedByPlayer(this))
                 {
                     var surroundingFriendlyCountries =
@@ -73,23 +73,23 @@ namespace Risk.Players
                     {
                         while (country.NumberOfTroops > 1)
                         {
-                            MoveTroopsToSurroundingCountries(country, gameManager);
+                            MoveTroopsToSurroundingCountries(turnManager, country);
                         }
                     }
                 }
             }
         }
 
-        public int Defend(GameManager gameManager, List<int> attackRolls, Country countryToDefend)
+        public int Defend(TurnManager turnManager, List<int> attackRolls, Country countryToDefend)
         {
             return 2;
         }
 
-        private bool IsLastEnemyInContinent(Country country, GameManager gameManager)
+        private bool IsLastEnemyInContinent(TurnManager turnManager, Country country)
         {
             var victimContinent = country.Continent;
 
-            var info = new GameInformation(gameManager);
+            var info = turnManager.GetGameInfo();
 
             var myCountriesInContinent =
                 info.GetAllCountriesOwnedByPlayer(this).Count(c => c.Continent == country.Continent);
@@ -98,34 +98,32 @@ namespace Risk.Players
             return (allCountriesInContinent - myCountriesInContinent) == 1;
         }
 
-        private void MoveTroopsToSurroundingCountries(Country country, GameManager gameManager)
+        private void MoveTroopsToSurroundingCountries(TurnManager turnManager, Country country)
         {
-            new TurnManager(this, gameManager).MoveTroops(country,
-                                                          GetMostImportantSurroundingCountry(gameManager, country), 1);
+            turnManager.MoveTroops(country, GetMostImportantSurroundingCountry(turnManager, country), 1);
         }
 
 
-        private Country GetMostImportantCountry(GameManager gameManager)
+        private Country GetMostImportantCountry(TurnManager turnManager)
         {
-            return
-                new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this)
-                                                .OrderBy(c => GetCountryScore(gameManager, c))
+            return turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this)
+                                                .OrderBy(c => GetCountryScore(turnManager, c))
                                                 .Last();
         }
 
-        private Country GetMostImportantSurroundingCountry(GameManager gameManager, Country country)
+        private Country GetMostImportantSurroundingCountry(TurnManager turnManager, Country country)
         {
             return
                 country.AdjacentCountries.ToList()
                        .Where(c => c.Owner == this)
-                       .OrderBy(c => GetCountryScore(gameManager, c))
+                       .OrderBy(c => GetCountryScore(turnManager, c))
                        .Last();
         }
 
-        private Country GetRandomOwnedCountryThatCanAttack(GameManager gameManager)
+        private Country GetRandomOwnedCountryThatCanAttack(TurnManager turnManager)
         {
             var ownedCountries =
-                new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this).Where(c => c.NumberOfTroops > 1 &&
+                turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this).Where(c => c.NumberOfTroops > 1 &&
                                                                                                c.AdjacentCountries.Any(
                                                                                                    ac =>
                                                                                                    ac.Owner != c.Owner))
@@ -133,10 +131,10 @@ namespace Risk.Players
             return ownedCountries[r.Next(0, ownedCountries.Count - 1)];
         }
 
-        private Country GetRandomAdjacentCountryToAttack(Country country, GameManager gameManager)
+        private Country GetRandomAdjacentCountryToAttack(TurnManager turnManager, Country country)
         {
             var adjacentCountries =
-                new GameInformation(gameManager).GetAdjacentCountriesWithDifferentOwner(country);
+                turnManager.GetGameInfo().GetAdjacentCountriesWithDifferentOwner(country);
             return adjacentCountries[r.Next(0, adjacentCountries.Count - 1)];
         }
 
@@ -151,13 +149,13 @@ namespace Risk.Players
             if (myTroops < 1)
                 myTroops = 1;
 
-            var rate = 1000*((Convert.ToDouble(myTroops))/(Convert.ToDouble(targetTroops + 1)));
+            var rate = 1000 * ((Convert.ToDouble(myTroops)) / (Convert.ToDouble(targetTroops + 1)));
 
             return Convert.ToInt16(rate);
         }
 
 
-        private double GetCountryScore(GameManager gameManager, Country country)
+        private double GetCountryScore(TurnManager turnManager, Country country)
         {
             var NumberOfPotentialTroopsFromContinent = 0;
             var StaticValue = 0;
@@ -167,9 +165,9 @@ namespace Risk.Players
             var SurroundingFriendlyTroops = 0;
             var SurroundingEnemyTroops = 0;
 
-            var average = AverageTroopsPerCountry(gameManager);
+            var average = AverageTroopsPerCountry(turnManager);
 
-            if (country.NumberOfTroops > (1.5*average))
+            if (country.NumberOfTroops > (1.5 * average))
             {
                 return 0;
             }
@@ -210,22 +208,22 @@ namespace Risk.Players
             var belowAverage = average - country.NumberOfTroops;
 
 
-            var rate = NumberOfPotentialTroopsFromContinent*1 +
-                       StaticValue*1 +
-                       SurroundingEnemyTroops*1 -
-                       SurroundingFriendlyTroops*1 +
-                       SurroundingEnemyCountries*1 -
-                       SurroundingFriendlyCountries*1 +
-                       belowAverage*2;
+            var rate = NumberOfPotentialTroopsFromContinent * 1 +
+                       StaticValue * 1 +
+                       SurroundingEnemyTroops * 1 -
+                       SurroundingFriendlyTroops * 1 +
+                       SurroundingEnemyCountries * 1 -
+                       SurroundingFriendlyCountries * 1 +
+                       belowAverage * 2;
 
             return rate;
         }
 
 
-        private List<PossibleAttack> GetAllPossibleAttacks(GameManager gameManager)
+        private List<PossibleAttack> GetAllPossibleAttacks(TurnManager turnManager)
         {
             var allAttacks = new List<PossibleAttack>();
-            foreach (var myCountry in new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this))
+            foreach (var myCountry in turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this))
             {
                 foreach (var victim in myCountry.AdjacentCountries.Where(v => v.Owner != this))
                 {
@@ -239,19 +237,19 @@ namespace Risk.Players
         }
 
 
-        private double AverageTroopsPerCountry(GameManager gameManager)
+        private double AverageTroopsPerCountry(TurnManager turnManager)
         {
-            var info = new GameInformation(gameManager);
+            var info = turnManager.GetGameInfo();
             var totalCountries = 0.0;
             var totalTroops = 0.0;
             info.GetAllCountriesOwnedByPlayer(this).ToList().ForEach(
                 (Country c) =>
-                    {
-                        totalCountries += 1;
-                        totalTroops += c.NumberOfTroops;
-                    });
+                {
+                    totalCountries += 1;
+                    totalTroops += c.NumberOfTroops;
+                });
 
-            return totalTroops/totalCountries;
+            return totalTroops / totalCountries;
         }
 
         private class PossibleAttack

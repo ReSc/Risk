@@ -8,7 +8,7 @@ namespace Risk.Core
         {
             if (HttpContext.Current.Application["Game"] == null)
             {
-                HttpContext.Current.Application["Game"] = new GameManager(new Settings());
+                HttpContext.Current.Application["Game"] = new GameManager(GetStats(), new Settings());
             }
 
             return (GameManager)HttpContext.Current.Application["Game"];
@@ -22,7 +22,7 @@ namespace Risk.Core
             }
         }
 
-        public static Statistics Get()
+        public static Statistics GetStats()
         {
             if (HttpContext.Current.Application["stats"] == null)
             {

@@ -70,11 +70,11 @@ namespace Risk.Players
          */
 
 
-        public void Deploy(GameManager gameManager, int numberOfTroops)
+        public void Deploy(TurnManager turnManager, int numberOfTroops)
         {
             if (numberOfTroops == 2)
             {
-                var tempList = new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this);
+                var tempList = turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this);
                 var Australia = tempList.Where(p => p.Continent == EContinent.Australia).ToList();
                 var SouthAmerica = tempList.Where(p => p.Continent == EContinent.SouthAmerica).ToList();
                 var Africa = tempList.Where(p => p.Continent == EContinent.Africa).ToList();
@@ -91,7 +91,7 @@ namespace Risk.Players
                         var i = AustraliaBottleNeck.AdjacentCountries.Where(p => p.Owner != this).ToList();
                         while (AustraliaBottleNeck.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(AustraliaBottleNeck, 1);
+                            turnManager.DeployTroops(AustraliaBottleNeck, 1);
                             numberOfTroops--;
                         }
                     }
@@ -107,7 +107,7 @@ namespace Risk.Players
                             var i = country.AdjacentCountries.Where(p => p.Owner != this).ToList();
                             while (country.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                             {
-                                new TurnManager(this, gameManager).DeployTroops(country, 1);
+                                turnManager.DeployTroops(country, 1);
                                 numberOfTroops--;
                             }
                         }
@@ -125,7 +125,7 @@ namespace Risk.Players
                         var i = country.AdjacentCountries.Where(p => p.Owner != this).ToList();
                         while (country.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(country, 1);
+                            turnManager.DeployTroops(country, 1);
                             numberOfTroops--;
                         }
                     }
@@ -142,7 +142,7 @@ namespace Risk.Players
                         var i = country.AdjacentCountries.Where(p => p.Owner != this).ToList();
                         while (country.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(country, 1);
+                            turnManager.DeployTroops(country, 1);
                             numberOfTroops--;
                         }
                     }
@@ -158,7 +158,7 @@ namespace Risk.Players
                         var i = country.AdjacentCountries.Where(p => p.Owner != this).ToList();
                         while (country.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(country, 1);
+                            turnManager.DeployTroops(country, 1);
                             numberOfTroops--;
                         }
                     }
@@ -174,7 +174,7 @@ namespace Risk.Players
                         var i = country.AdjacentCountries.Where(p => p.Owner != this).ToList();
                         while (country.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(country, 1);
+                            turnManager.DeployTroops(country, 1);
                             numberOfTroops--;
                         }
                     }
@@ -191,7 +191,7 @@ namespace Risk.Players
                         var i = country.AdjacentCountries.Where(p => p.Owner != this).ToList();
                         while (country.NumberOfTroops < 10 && numberOfTroops > 0 && i.Count > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(country, 1);
+                            turnManager.DeployTroops(country, 1);
                             numberOfTroops--;
                         }
                     }
@@ -200,7 +200,7 @@ namespace Risk.Players
 
                 while (numberOfTroops > 0)
                 {
-                    var target = GetRandomOwnedCountry(gameManager);
+                    var target = GetRandomOwnedCountry(turnManager);
 
                     var i = target.AdjacentCountries.Where(p => p.Owner != this).ToList();
                     if (i.Count > 0)
@@ -210,7 +210,7 @@ namespace Risk.Players
                             var z = 0;
                             while (numberOfTroops > 0)
                             {
-                                new TurnManager(this, gameManager).DeployTroops(GetRandomOwnedCountry(gameManager), 1);
+                                turnManager.DeployTroops(GetRandomOwnedCountry(turnManager), 1);
                                 z++;
                                 numberOfTroops--;
                                 if (z > 30)
@@ -233,7 +233,7 @@ namespace Risk.Players
 
                 while (numberOfTroops > 0)
                 {
-                    new TurnManager(this, gameManager).DeployTroops(GetRandomOwnedCountry(gameManager), 1);
+                    turnManager.DeployTroops(GetRandomOwnedCountry(turnManager), 1);
 
 
                     numberOfTroops--;
@@ -241,7 +241,7 @@ namespace Risk.Players
             }
             else
             {
-                var myCountries = new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this);
+                var myCountries = turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this);
                 var potential = new List<Country>();
                 foreach (var country in myCountries)
                 {
@@ -255,7 +255,7 @@ namespace Risk.Players
                 {
                     while (countryy.NumberOfTroops < 10 && numberOfTroops > 0)
                     {
-                        new TurnManager(this, gameManager).DeployTroops(countryy, 1);
+                        turnManager.DeployTroops(countryy, 1);
                         numberOfTroops--;
                     }
                 }
@@ -265,7 +265,7 @@ namespace Risk.Players
                     {
                         while (numberOfTroops > 0)
                         {
-                            new TurnManager(this, gameManager).DeployTroops(countryy, 1);
+                            turnManager.DeployTroops(countryy, 1);
                             numberOfTroops--;
                         }
                     }
@@ -273,7 +273,7 @@ namespace Risk.Players
             }
         }
 
-        public void Attack(GameManager gameManager)
+        public void Attack(TurnManager turnManager)
         {
             //var country = GetRandomOwnedCountryThatCanAttack();
             //var countryToAttack = GetRandomAdjacentCountryToAttack(country);
@@ -283,7 +283,7 @@ namespace Risk.Players
 
             do
             {
-                var tempList = new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this);
+                var tempList = turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this);
                 foreach (var country in tempList)
                 {
                     var adjacentCountryList = country.AdjacentCountries.Where(p => p.Owner != this);
@@ -292,7 +292,7 @@ namespace Risk.Players
                     {
                         if (countryToAttack.NumberOfTroops < country.NumberOfTroops && country.NumberOfTroops > 3)
                         {
-                            new TurnManager(this, gameManager).Attack(country, countryToAttack,
+                            turnManager.Attack(country, countryToAttack,
                                                                       country.NumberOfTroops - 1);
                             repeat++;
                         }
@@ -303,11 +303,11 @@ namespace Risk.Players
             } while (repeat < 2 && timeout < 200);
         }
 
-        public void Move(GameManager gameManager)
+        public void Move(TurnManager turnManager)
         {
             var movesLeft = 7;
 
-            var tempList = new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this);
+            var tempList = turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this);
 
             foreach (var country in tempList)
             {
@@ -344,13 +344,13 @@ namespace Risk.Players
                                 {
                                     if (movesLeft > (country.NumberOfTroops - 1))
                                     {
-                                        new TurnManager(this, gameManager).MoveTroops(country, countryToMove,
+                                        turnManager.MoveTroops(country, countryToMove,
                                                                                       country.NumberOfTroops - 1);
                                         movesLeft = movesLeft - (country.NumberOfTroops - 1);
                                     }
                                     else
                                     {
-                                        new TurnManager(this, gameManager).MoveTroops(country, countryToMove, movesLeft);
+                                        turnManager.MoveTroops(country, countryToMove, movesLeft);
                                         movesLeft = 0;
                                     }
                                 }
@@ -377,13 +377,13 @@ namespace Risk.Players
                                         {
                                             if (movesLeft > (country.NumberOfTroops - 1))
                                             {
-                                                new TurnManager(this, gameManager).MoveTroops(country, countryToMove,
+                                                turnManager.MoveTroops(country, countryToMove,
                                                                                               country.NumberOfTroops - 1);
                                                 movesLeft = movesLeft - (country.NumberOfTroops - 1);
                                             }
                                             else
                                             {
-                                                new TurnManager(this, gameManager).MoveTroops(country, countryToMove,
+                                                turnManager.MoveTroops(country, countryToMove,
                                                                                               movesLeft);
                                                 movesLeft = 0;
                                             }
@@ -401,7 +401,7 @@ namespace Risk.Players
             }
         }
 
-        public int Defend(GameManager gameManager, List<int> attackRolls, Country countryToDefend)
+        public int Defend(TurnManager turnManager, List<int> attackRolls, Country countryToDefend)
         {
             if (attackRolls.Count == 3)
             {
@@ -453,16 +453,17 @@ namespace Risk.Players
         }
 
 
-        private Country GetRandomOwnedCountry(GameManager gameManager)
+        private Country GetRandomOwnedCountry(TurnManager turnManager)
         {
-            var ownedCountries = new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this);
+            var gameInformation = turnManager.GetGameInfo();
+            var ownedCountries = gameInformation.GetAllCountriesOwnedByPlayer(this);
             return ownedCountries[r.Next(0, ownedCountries.Count - 1)];
         }
 
-        private Country GetRandomOwnedCountryThatCanAttack(GameManager gameManager)
+        private Country GetRandomOwnedCountryThatCanAttack(TurnManager turnManager)
         {
             var ownedCountries =
-                new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this).Where(c => c.NumberOfTroops > 1 &&
+                turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this).Where(c => c.NumberOfTroops > 1 &&
                                                                                                c.AdjacentCountries.Any(
                                                                                                    ac =>
                                                                                                    ac.Owner != c.Owner))
@@ -470,10 +471,9 @@ namespace Risk.Players
             return ownedCountries[r.Next(0, ownedCountries.Count - 1)];
         }
 
-        private Country GetRandomAdjacentCountryToAttack(Country country, GameManager gameManager)
+        private Country GetRandomAdjacentCountryToAttack(TurnManager turnManager, Country country)
         {
-            var adjacentCountries =
-                new GameInformation(gameManager).GetAdjacentCountriesWithDifferentOwner(country);
+            var adjacentCountries =turnManager.GetGameInfo().GetAdjacentCountriesWithDifferentOwner(country);
             return adjacentCountries[r.Next(0, adjacentCountries.Count - 1)];
         }
     }

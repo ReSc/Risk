@@ -29,30 +29,30 @@ namespace Risk.Players.RS
         ///     It does a full analysis for every phase of a turn.
         ///     This wastes some computational resources, but hopefully leads to a better outcome.
         /// </summary>
-        public RiskAnalysis Analyze(GameManager gameManager, GameInformation gameInformation)
+        public RiskAnalysis Analyze(TurnManager turnManager)
         {
             var analysis = new RiskAnalysis();
-
+            var gameInformation = turnManager.GetGameInfo();
             // the ordering of the analysis steps is important
             // each step depends on the results of the previous steps.
 
             // first, check the state of the board.
-            DoContinentAnalysis(gameManager, gameInformation, analysis);
+            DoContinentAnalysis(gameInformation, analysis);
             // next, find which countries we want.
-            DoAttackAnalysis(gameManager, gameInformation, analysis);
+            DoAttackAnalysis(turnManager, gameInformation, analysis);
             // then check if we need to move troops
-            DoMoveAnalysis(gameManager, gameInformation, analysis);
+            DoMoveAnalysis(gameInformation, analysis);
             // then place reinforcements on the board.
-            DoDeployAnalysis(gameManager, gameInformation, analysis);
+            DoDeployAnalysis(turnManager, gameInformation, analysis);
 
             // gather important countries.
             analysis.ImportantCountries
-                    .AddRange(FindImportantCountries(gameManager, gameInformation, analysis));
+                    .AddRange(FindImportantCountries(gameInformation, analysis));
 
             return analysis;
         }
 
-        private void DoContinentAnalysis(GameManager gameManager, GameInformation info, RiskAnalysis analysis)
+        private void DoContinentAnalysis(GameInformation info, RiskAnalysis analysis)
         {
             // compute continent statistics
             var continents = from c in info.GetAllCountries()
@@ -76,7 +76,7 @@ namespace Risk.Players.RS
             analysis.Continents.AddRange(continents);
         }
 
-        private void DoAttackAnalysis(GameManager gameManager, GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoAttackAnalysis(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis)
         {
             var continents = (from c in analysis.GetContinentsByDominance()
                               where c.MyCountries.Count > 0
@@ -115,7 +115,7 @@ namespace Risk.Players.RS
                     if (enemy != null)
                     {
                         attacked.Add(enemy);
-                        AddAttack(gameManager, analysis, friendly, enemy);
+                        AddAttack(turnManager, analysis, friendly, enemy);
                     }
                 }
             }
@@ -132,7 +132,7 @@ namespace Risk.Players.RS
                                                .OrderBy(x => friendly.NumberOfTroops - x.NumberOfTroops)
                                                .FirstOrDefault();
                     if (enemy != null && attacked.Add(enemy))
-                        AddAttack(gameManager, analysis, friendly, enemy);
+                        AddAttack(turnManager, analysis, friendly, enemy);
                 }
             }
 
@@ -146,12 +146,12 @@ namespace Risk.Players.RS
         /// <summary>
         ///     Adds attack info to the analysis, but only if there is a chance for success
         /// </summary>
-        private void AddAttack(GameManager gameManager, RiskAnalysis analysis, Country friendly, Country enemy)
+        private void AddAttack(TurnManager turnManager, RiskAnalysis analysis, Country friendly, Country enemy)
         {
             // kinda simplistic...
             if (friendly.NumberOfTroops > 3 && friendly.NumberOfTroops >= enemy.NumberOfTroops)
             {
-                analysis.Attacks.Add(new Attack(new TurnManager(_player, gameManager))
+                analysis.Attacks.Add(new Attack(turnManager)
                     {
                         FromCountry = friendly,
                         ToCountry = enemy,
@@ -160,12 +160,11 @@ namespace Risk.Players.RS
             }
         }
 
-        private void DoDeployAnalysis(GameManager gameManager, GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoDeployAnalysis(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis)
         {
             var troops = gameInformation.GetNumberOfUnitsToDeploy(_player);
-            var turnManager = new TurnManager(_player, gameManager);
-            troops = troops - DeployContinentGatewayDefence(gameManager, gameInformation, analysis, troops, turnManager);
-            troops = troops - DeployOffence(gameInformation, analysis, troops, turnManager);
+            troops = troops - DeployContinentGatewayDefence(turnManager, gameInformation, analysis, troops);
+            troops = troops - DeployOffence(turnManager, gameInformation, analysis, troops);
 
             if (troops > 0)
             {
@@ -187,8 +186,7 @@ namespace Risk.Players.RS
         }
 
         /// <returns>The number of deployed troops</returns>
-        private int DeployContinentGatewayDefence(GameManager gameManager, GameInformation gameInformation,
-                                                  RiskAnalysis analysis, int availableTroops, TurnManager turnManager)
+        private int DeployContinentGatewayDefence(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis, int availableTroops)
         {
             var turnmanager = turnManager;
             var weakGateways = (from c in analysis.Continents
@@ -229,8 +227,7 @@ namespace Risk.Players.RS
             return deployments.Sum(x => x.Troops);
         }
 
-        private int DeployOffence(GameInformation gameInformation, RiskAnalysis analysis, int availableTroops,
-                                  TurnManager turnManager)
+        private int DeployOffence(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis, int availableTroops)
         {
             var deployments = (from continent in analysis.Continents.Where(x => !x.IsOwned)
                                from country in continent.MyCountries
@@ -256,12 +253,11 @@ namespace Risk.Players.RS
             return deployments.Sum(x => x.Troops);
         }
 
-        private void DoMoveAnalysis(GameManager gameManager, GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoMoveAnalysis(GameInformation gameInformation, RiskAnalysis analysis)
         {
         }
 
-        private IEnumerable<Country> FindImportantCountries(GameManager gameManager, GameInformation gameInformation,
-                                                            RiskAnalysis analysis)
+        private IEnumerable<Country> FindImportantCountries(GameInformation gameInformation, RiskAnalysis analysis)
         {
             return analysis.Attacks.Select(x => x.FromCountry)
                            .Concat(analysis.Moves.Select(x => x.FromCountry))

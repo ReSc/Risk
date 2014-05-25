@@ -26,9 +26,9 @@ namespace Risk.Players
             get { return "Pink"; }
         }
 
-        public void Deploy(GameManager gameManager, int numberOfTroops)
+        public void Deploy(TurnManager turnManager, int numberOfTroops)
         {
-            gameInformation = new GameInformation(gameManager);
+            gameInformation = turnManager.GetGameInfo();
 
             //exclude all isolated countries (all countries with only enemy neighbours)
             var countriesToAimAt =
@@ -46,7 +46,7 @@ namespace Risk.Players
 
             while (defensiveRates.First().Value < DEFENSIVE_THRESHOLD_FOR_DEPLOYMENT && numberOfTroops > 0)
             {
-                new TurnManager(this, gameManager).DeployTroops(defensiveRates.First().Key, 1);
+                turnManager.DeployTroops(defensiveRates.First().Key, 1);
                 defensiveRates = GetDefensiveRates(countriesWithEnemyNeighbours).OrderByDescending(x => x.Value);
                 numberOfTroops--;
             }
@@ -65,7 +65,7 @@ namespace Risk.Players
 
             while (countriesWithRates.Any() && numberOfTroops > 0)
             {
-                new TurnManager(this, gameManager).DeployTroops(countriesWithRates.First().Key, 1);
+                turnManager.DeployTroops(countriesWithRates.First().Key, 1);
                 countriesWithRates =
                     GetDefensiveRates(allOwnCountriesInBiggestContinent)
                         .Where(x => x.Key.NumberOfTroops < MAX_TROOPS_FOR_DEPLOYMENT)
@@ -75,25 +75,25 @@ namespace Risk.Players
 
             while (numberOfTroops > 0)
             {
-                new TurnManager(this, gameManager).DeployTroops(GetRandomOwnedCountry(gameManager), 1);
+                turnManager.DeployTroops(GetRandomOwnedCountry(turnManager), 1);
                 numberOfTroops--;
             }
         }
 
-        public void Attack(GameManager gameManager)
+        public void Attack(TurnManager turnManager)
         {
-            gameInformation = new GameInformation(gameManager);
+            gameInformation = turnManager.GetGameInfo();
 
             var countryToAttackWith = GetCountryToAttackWith();
             while (countryToAttackWith != null)
             {
-                new TurnManager(this, gameManager).Attack(countryToAttackWith.Item1, countryToAttackWith.Item2,
+                turnManager.Attack(countryToAttackWith.Item1, countryToAttackWith.Item2,
                                                           countryToAttackWith.Item1.NumberOfTroops - 1);
                 countryToAttackWith = GetCountryToAttackWith();
             }
         }
 
-        public void Move(GameManager gameManager)
+        public void Move(TurnManager turnManager)
         {
             var countriesToAimAt =
                 gameInformation.GetAllCountriesOwnedByPlayer(this)
@@ -125,7 +125,7 @@ namespace Risk.Players
                                        .ToArray();
                     if (adjacentCountriesWithSameOwner.Any())
                     {
-                        new TurnManager(this, gameManager).MoveTroops(first.Key, adjacentCountriesWithSameOwner.First(),
+                        turnManager.MoveTroops(first.Key, adjacentCountriesWithSameOwner.First(),
                                                                       adjacentCountriesWithSameOwner.First()
                                                                                                     .NumberOfTroops - 1);
                     }
@@ -135,7 +135,7 @@ namespace Risk.Players
             }
         }
 
-        public int Defend(GameManager gameManager, List<int> attackRolls, Country countryToDefend)
+        public int Defend(TurnManager turnManager, List<int> attackRolls, Country countryToDefend)
         {
             if (attackRolls.Count(x => x > 3) > 1)
                 return 1;
@@ -172,9 +172,9 @@ namespace Risk.Players
             return countriesToAttackWith.OrderByDescending(x => x.Item3).First();
         }
 
-        private Country GetRandomOwnedCountry(GameManager gameManager)
+        private Country GetRandomOwnedCountry(TurnManager turnManager)
         {
-            var ownedCountries = new GameInformation(gameManager).GetAllCountriesOwnedByPlayer(this);
+            var ownedCountries = turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(this);
             return ownedCountries[r.Next(0, ownedCountries.Count - 1)];
         }
 
