@@ -24,6 +24,8 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -44,6 +46,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.4.5.11\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -110,49 +115,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\HomeController.cs" />
-    <Compile Include="Core\ActionLogger.cs" />
-    <Compile Include="Core\DeploymentCounter.cs" />
-    <Compile Include="Core\GameInformation.cs" />
-    <Compile Include="Core\GameManager.cs" />
-    <Compile Include="Core\IPlayer.cs" />
-    <Compile Include="Core\RiskException.cs" />
-    <Compile Include="Core\Settings.cs" />
-    <Compile Include="Core\Statistics.cs" />
-    <Compile Include="Core\TerrainGenerator.cs" />
-    <Compile Include="Core\TurnManager.cs" />
+    <Compile Include="Core\RiskContext.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Models\Actions\AttackAction.cs" />
-    <Compile Include="Models\Actions\DeployAction.cs" />
-    <Compile Include="Models\Actions\GameAction.cs" />
-    <Compile Include="Models\Actions\InfoAction.cs" />
-    <Compile Include="Models\Actions\MoveAction.cs" />
-    <Compile Include="Models\Board.cs" />
-    <Compile Include="Models\Continents\Africa.cs" />
-    <Compile Include="Models\Continents\Asia.cs" />
-    <Compile Include="Models\Continents\Europe.cs" />
-    <Compile Include="Models\Continents\SouthAmerica.cs" />
-    <Compile Include="Models\Country.cs" />
-    <Compile Include="Models\Continents\NorthAmerica.cs" />
-    <Compile Include="Models\EContinent.cs" />
-    <Compile Include="Models\Actions\IAction.cs" />
-    <Compile Include="Players\Aad.cs" />
-    <Compile Include="Players\Blitzkrieg.cs" />
-    <Compile Include="Players\Exceptionists.cs" />
-    <Compile Include="Players\AI\Player1.cs" />
-    <Compile Include="Players\AI\Player3_.cs" />
-    <Compile Include="Players\AI\Player2.cs" />
-    <Compile Include="Players\Pros.cs" />
-    <Compile Include="Players\RS\Attack.cs" />
-    <Compile Include="Players\RS\_CollectionExtensions.cs" />
-    <Compile Include="Players\RS\Continent.cs" />
-    <Compile Include="Players\RS\Deployment.cs" />
-    <Compile Include="Players\RS\_GameInformationExtensions.cs" />
-    <Compile Include="Players\RS\Move.cs" />
-    <Compile Include="Players\RS\Remco.cs" />
-    <Compile Include="Players\RS\RiskAnalysis.cs" />
-    <Compile Include="Players\RS\RiskAnalyzer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -175,10 +141,18 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="packages.config" />
+    <Content Include="packages.config">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Home\Index.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Risc.Core\Risk.Core.csproj">
+      <Project>{DC41B1E2-C17C-4E24-B284-8519742B3BC3}</Project>
+      <Name>Risk.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -208,6 +182,13 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

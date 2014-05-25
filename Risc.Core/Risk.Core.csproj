@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DC41B1E2-C17C-4E24-B284-8519742B3BC3}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Risk</RootNamespace>
+    <AssemblyName>Risk.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Core\ActionLogger.cs" />
+    <Compile Include="Core\DeploymentCounter.cs" />
+    <Compile Include="Core\GameInformation.cs" />
+    <Compile Include="Core\GameManager.cs" />
+    <Compile Include="Core\IPlayer.cs" />
+    <Compile Include="Models\Actions\AttackAction.cs" />
+    <Compile Include="Models\Actions\DeployAction.cs" />
+    <Compile Include="Models\Actions\GameAction.cs" />
+    <Compile Include="Models\Actions\IAction.cs" />
+    <Compile Include="Models\Actions\InfoAction.cs" />
+    <Compile Include="Models\Actions\MoveAction.cs" />
+    <Compile Include="Models\Board.cs" />
+    <Compile Include="Models\Continents\Africa.cs" />
+    <Compile Include="Models\Continents\Asia.cs" />
+    <Compile Include="Models\Continents\Europe.cs" />
+    <Compile Include="Models\Continents\NorthAmerica.cs" />
+    <Compile Include="Models\Continents\SouthAmerica.cs" />
+    <Compile Include="Models\Country.cs" />
+    <Compile Include="Models\EContinent.cs" />
+    <Compile Include="Players\Aad.cs" />
+    <Compile Include="Players\AI\Player1.cs" />
+    <Compile Include="Players\AI\Player2.cs" />
+    <Compile Include="Players\AI\Player3_.cs" />
+    <Compile Include="Players\Blitzkrieg.cs" />
+    <Compile Include="Players\Exceptionists.cs" />
+    <Compile Include="Players\Pros.cs" />
+    <Compile Include="Players\RS\Attack.cs" />
+    <Compile Include="Players\RS\Continent.cs" />
+    <Compile Include="Players\RS\Deployment.cs" />
+    <Compile Include="Players\RS\Move.cs" />
+    <Compile Include="Players\RS\Remco.cs" />
+    <Compile Include="Players\RS\RiskAnalysis.cs" />
+    <Compile Include="Players\RS\RiskAnalyzer.cs" />
+    <Compile Include="Players\RS\_CollectionExtensions.cs" />
+    <Compile Include="Players\RS\_GameInformationExtensions.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Core\RiskException.cs" />
+    <Compile Include="Core\Settings.cs" />
+    <Compile Include="Core\Statistics.cs" />
+    <Compile Include="Core\TerrainGenerator.cs" />
+    <Compile Include="Core\TurnManager.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

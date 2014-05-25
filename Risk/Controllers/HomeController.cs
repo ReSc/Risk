@@ -1,4 +1,5 @@
-﻿using Risk.Core;
+﻿using System.Linq;
+using Risk.Core;
 using Risk.Models;
 using System.Web.Mvc;
 
@@ -8,47 +9,47 @@ namespace Risk.Controllers
     {
         public ActionResult Index()
         {
-            var board = new Board { Countries = GameManager.Get().Countries };
+            var board = new Board { Countries = RiskContext.GetGame().Countries };
             return View(board);
         }
 
         public ActionResult NextTurn()
         {
-            var gameManager = GameManager.Get();
+            var gameManager = RiskContext.GetGame();
             gameManager.DoNextTurn();
             return View("Index", CreateBoard(gameManager));
         }
 
         public ActionResult NextPhase()
         {
-            var gameManager = GameManager.Get();
+            var gameManager = RiskContext.GetGame();
             gameManager.DoNextPhase();
             return View("Index", CreateBoard(gameManager));
         }
 
         public ActionResult SkipStartUpPhase()
         {
-            var gameManager = GameManager.Get();
+            var gameManager = RiskContext.GetGame();
             gameManager.DoStartupPhase();
             return View("Index", CreateBoard(gameManager));
         }
 
         public ActionResult NewGame()
         {
-            GameManager.Reset();
-            return View("Index", CreateBoard(GameManager.Get()));
+            RiskContext.ResetGame();
+            return View("Index", CreateBoard(RiskContext.GetGame()));
         }
 
         public ActionResult EndGame()
         {
-            var gameManager = GameManager.Get();
+            var gameManager = RiskContext.GetGame();
 
             do
             {
                 gameManager.DoNextTurn();
             } while (!gameManager.GameEnded);
 
-            return View("Index", CreateBoard(GameManager.Get()));
+            return View("Index", CreateBoard(RiskContext.GetGame()));
         }
 
         private Board CreateBoard(GameManager gameManager)
@@ -59,9 +60,9 @@ namespace Risk.Controllers
                 Actions = gameManager.Actions,
                 NextPhase = gameManager.CurrentPhase,
                 ActivePlayer = gameManager.CurrentPlayer,
-                Players = Settings.Players,
+                Players = gameManager.Players.ToList(),
                 GameEnded = gameManager.GameEnded,
-                TimesWonByPlayers = Statistics.Get().TimesWonByPlayer,
+                TimesWonByPlayers = RiskContext.Get().TimesWonByPlayer,
                 Turn = gameManager.Turn,
                 LastPhase = gameManager.LastPhase,
                 LastPlayer = gameManager.LastPhase == EPhase.Move ? gameManager.LastPlayer : gameManager.CurrentPlayer 
