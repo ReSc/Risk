@@ -1,11 +1,15 @@
-﻿using System.Web;
+﻿using System;
+using System.Threading;
+using System.Web;
 
 namespace Risk.Core
 {
+    // dubious thread safety here...
     public static class RiskContext
     {
         public static GameManager GetGame()
         {
+            
             if (HttpContext.Current.Application["Game"] == null)
             {
                 HttpContext.Current.Application["Game"] = new GameManager(GetStats(), new Settings());
