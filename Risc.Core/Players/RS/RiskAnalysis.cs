@@ -60,9 +60,15 @@ namespace Risk.Players.RS
 
         public void ExecuteAttacks()
         {
+            var losses = 0;
             foreach (var attack in Attacks)
             {
                 attack.Execute();
+                if (attack.Succeeded == false)
+                    losses++;
+
+                if (losses >= 2)
+                    break;
             }
         }
 
@@ -101,11 +107,11 @@ namespace Risk.Players.RS
         }
 
         /// <summary>
-        ///     Returns the continents sorted by descending dominance, excluding the ones the player owns.
+        ///     Returns the continents sorted by descending dominance.
         /// </summary>
         public IEnumerable<Continent> GetContinentsByDominance()
         {
-            return Continents.Where(x => !x.IsOwned).OrderByDescending(x => x.Dominance);
+            return Continents.OrderByDescending(x => x.Dominance).ThenByDescending(x => x.MyCountries.Sum(c => c.NumberOfTroops));
         }
     }
 }

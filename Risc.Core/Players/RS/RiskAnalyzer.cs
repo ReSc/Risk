@@ -32,30 +32,29 @@ namespace Risk.Players.RS
         public RiskAnalysis Analyze(TurnManager turnManager)
         {
             var analysis = new RiskAnalysis();
-            var gameInformation = turnManager.GetGameInfo();
             // the ordering of the analysis steps is important
             // each step depends on the results of the previous steps.
 
             // first, check the state of the board.
-            DoContinentAnalysis(gameInformation, analysis);
+            DoContinentAnalysis(turnManager, analysis);
             // next, find which countries we want.
-            DoAttackAnalysis(turnManager, gameInformation, analysis);
+            DoAttackAnalysis(turnManager, analysis);
             // then check if we need to move troops
-            DoMoveAnalysis(gameInformation, analysis);
+            DoMoveAnalysis(turnManager, analysis);
             // then place reinforcements on the board.
-            DoDeployAnalysis(turnManager, gameInformation, analysis);
+            DoDeployAnalysis(turnManager, analysis);
 
             // gather important countries.
-            analysis.ImportantCountries
-                    .AddRange(FindImportantCountries(gameInformation, analysis));
+            DoImportantCountryAnalysis(turnManager, analysis);
+
 
             return analysis;
         }
 
-        private void DoContinentAnalysis(GameInformation info, RiskAnalysis analysis)
+        private void DoContinentAnalysis(TurnManager turnManager, RiskAnalysis analysis)
         {
             // compute continent statistics
-            var continents = from c in info.GetAllCountries()
+            var continents = from c in turnManager.GetGameInfo().GetAllCountries()
                              group c by c.Continent
                                  into continent
                                  select new Continent
@@ -76,15 +75,15 @@ namespace Risk.Players.RS
             analysis.Continents.AddRange(continents);
         }
 
-        private void DoAttackAnalysis(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoAttackAnalysis(TurnManager turnManager, RiskAnalysis analysis)
         {
             var continents = (from c in analysis.GetContinentsByDominance()
-                              where c.MyCountries.Count > 0
                               select c).ToList();
 
             if (continents.Count == 0) return; // shouldn't happen unless we've won, or have been defeated completely.
 
             var attacked = new HashSet<Country>();
+            var gameInfo = turnManager.GetGameInfo();
             foreach (var continent in continents)
             {
                 // create a lookup with the ranking of the enemies,
@@ -98,7 +97,7 @@ namespace Risk.Players.RS
 
                 foreach (var friendly in friendlies)
                 {
-                    var neighbours = gameInformation.GetAdjacentCountriesWithDifferentOwner(friendly).OrderBy(x =>
+                    var neighbours = gameInfo.GetAdjacentCountriesWithDifferentOwner(friendly).OrderBy(x =>
                         {
                             // use TryGetValue, adjacent countries can be on a different continent.
                             // use a very high ranking for those, so we don't attack them, yet.
@@ -123,12 +122,12 @@ namespace Risk.Players.RS
             if (attacked.Count == 0)
             {
                 // break out of owned continents
-                var fromGateways = from c in gameInformation.GetAllCountriesOwnedByPlayer(_player)
+                var fromGateways = from c in gameInfo.GetAllCountriesOwnedByPlayer(_player)
                                    where c.IsContinentGatewayUnderAttack()
                                    select c;
                 foreach (var friendly in fromGateways)
                 {
-                    var enemy = gameInformation.GetAdjacentCountriesWithDifferentOwner(friendly)
+                    var enemy = gameInfo.GetAdjacentCountriesWithDifferentOwner(friendly)
                                                .OrderBy(x => friendly.NumberOfTroops - x.NumberOfTroops)
                                                .FirstOrDefault();
                     if (enemy != null && attacked.Add(enemy))
@@ -148,61 +147,142 @@ namespace Risk.Players.RS
         /// </summary>
         private void AddAttack(TurnManager turnManager, RiskAnalysis analysis, Country friendly, Country enemy)
         {
-            // kinda simplistic...
-            if (friendly.NumberOfTroops > 3 && friendly.NumberOfTroops >= enemy.NumberOfTroops)
+            var minDefenders = 2;
+            if (friendly.NumberOfTroops > minDefenders+1 && friendly.NumberOfTroops > enemy.NumberOfTroops )
             {
                 analysis.Attacks.Add(new Attack(turnManager)
                     {
                         FromCountry = friendly,
                         ToCountry = enemy,
-                        Troops = Math.Min(3, friendly.NumberOfTroops),
+                        Troops = friendly.NumberOfTroops - minDefenders,
                     });
             }
         }
 
-        private void DoDeployAnalysis(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoDeployAnalysis(TurnManager turnManager, RiskAnalysis analysis)
         {
-            var troops = gameInformation.GetNumberOfUnitsToDeploy(_player);
-            troops = troops - DeployContinentGatewayDefence(turnManager, gameInformation, analysis, troops);
-            troops = troops - DeployOffence(turnManager, gameInformation, analysis, troops);
+            var gameInfo = turnManager.GetGameInfo();
+            var troops = gameInfo.GetNumberOfUnitsToDeploy(_player);
+            troops = troops - AustraliaRuleZ(turnManager, analysis, troops);
+            troops = troops - DeployContinentGatewayDefence(turnManager, analysis, troops);
+            troops = troops - DeployOffence(turnManager, analysis, troops);
+            troops = troops - RescueLastManStanding(turnManager, analysis, troops);
+            DeployRemaining(turnManager, analysis, troops, gameInfo);
+        }
 
-            if (troops > 0)
+        private int RescueLastManStanding(TurnManager turnManager, RiskAnalysis analysis, int availableTroops)
+        {
+            if (availableTroops < 4) return 0;
+
+            var lastManStanding = new Queue<Deployment>(from cnt in analysis.Continents
+                                                        where cnt.MyCountries.Sum(x => x.NumberOfTroops) < 3
+                                                        from c in cnt.MyCountries
+                                                        select
+                                                            new Deployment(turnManager)
+                                                                {
+                                                                    ToCountry = c
+                                                                });
+            if (lastManStanding.Count == 0)
+                return 0;
+
+            while (availableTroops > 0)
             {
-                // deploy remainder evenly...
-                var deployments = gameInformation.GetAllCountriesOwnedByPlayer(_player)
-                                                 .OrderBy(x => x.NumberOfTroops)
-                                                 .Select(x => new Deployment(turnManager) { ToCountry = x })
-                                                 .ToList();
-                while (troops > 0)
+                availableTroops--;
+                var x = lastManStanding.Dequeue();
+                x.Troops++;
+                lastManStanding.Enqueue(x);
+            }
+            analysis.Deployments.AddRange(lastManStanding);
+            return lastManStanding.Sum(x => x.Troops);
+        }
+
+        private void DeployRemaining(TurnManager turnManager, RiskAnalysis analysis, int troops, GameInformation gameInfo)
+        {
+            if (troops <= 0) return;
+            // deploy remainder evenly...
+            var deployments = gameInfo.GetAllCountriesOwnedByPlayer(_player)
+                                      .OrderBy(x => x.NumberOfTroops)
+                                      .Select(x => new Deployment(turnManager) { ToCountry = x })
+                                      .ToList();
+            while (troops > 0)
+            {
+                foreach (var deployment in deployments.TakeWhile(deployment => --troops >= 0))
                 {
-                    foreach (var deployment in deployments.TakeWhile(deployment => --troops >= 0))
+                    deployment.Troops++;
+                }
+            }
+
+            analysis.Deployments.AddRange(deployments.Where(x => x.Troops > 0));
+        }
+
+        private int AustraliaRuleZ(TurnManager turnManager, RiskAnalysis analysis, int availableTroops)
+        {
+            if (availableTroops == 0) return 0;
+            var downUnder = analysis.Continents.FirstOrDefault(x => x.Name == EContinent.Australia);
+            if (downUnder == null || downUnder.MyCountries.Count == 0)
+                return 0;
+
+            if (downUnder.IsOwned)
+            {
+                availableTroops = Math.Min(availableTroops, 3);
+                var whatchamacallit = downUnder.MyCountries.First(x => x.IsContinentGateway());
+                var minAussieDefenders = 10;
+                if (whatchamacallit.IsUnderAttack() || whatchamacallit.NumberOfTroops < minAussieDefenders)
+                {
+                    analysis.Deployments.Add(new Deployment(turnManager)
+                        {
+                            ToCountry = whatchamacallit,
+                            Troops = availableTroops,
+
+                        });
+                    return availableTroops;
+                }
+                var thingamajig = whatchamacallit.AdjacentCountries.First(x => x.Continent != EContinent.Australia);
+                if (thingamajig.IsUnderAttack() || thingamajig.NumberOfTroops < minAussieDefenders)
+                {
+                    analysis.Deployments.Add(new Deployment(turnManager)
                     {
-                        deployment.Troops++;
-                    }
+                        ToCountry = thingamajig,
+                        Troops = availableTroops,
+
+                    });
+                    return availableTroops;
                 }
 
-                analysis.Deployments.AddRange(deployments.Where(x => x.Troops > 0));
+                return 0;
             }
+
+            var deployments = downUnder.MyCountries.Select(x => new Deployment(turnManager) { ToCountry = x });
+            // round-robin deployment, using a queue...
+            var q = new Queue<Deployment>(deployments);
+            while (availableTroops > 0)
+            {
+                availableTroops--;
+                var c = q.Dequeue();
+                c.Troops++;
+                q.Enqueue(c);
+            }
+            analysis.Deployments.AddRange(q);
+            return q.Sum(x => x.Troops);
         }
 
         /// <returns>The number of deployed troops</returns>
-        private int DeployContinentGatewayDefence(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis, int availableTroops)
+        private int DeployContinentGatewayDefence(TurnManager turnManager, RiskAnalysis analysis, int availableTroops)
         {
-            var turnmanager = turnManager;
+            if (availableTroops == 0) return 0;
+            var gameInformation = turnManager.GetGameInfo();
             var weakGateways = (from c in analysis.Continents
                                 where c.IsOwned
                                 from country in c.MyCountries
-                                where country.IsContinentGatewayUnderAttack()
+                                where country.IsContinentGateway()
                                 // make it a reasonable large margin.
-                                let troopTarget =
-                                    gameInformation.GetAdjacentCountriesWithDifferentOwner(country)
-                                                   .Max(x => x.NumberOfTroops) + 3
+                                let troopTarget = GetTroopTarget(gameInformation, country)
                                 where country.NumberOfTroops < troopTarget
                                 select new
                                     {
                                         country,
                                         troopTarget,
-                                        deployment = new Deployment(turnmanager) { ToCountry = country },
+                                        deployment = new Deployment(turnManager) { ToCountry = country },
                                     }).ToList();
 
             var deployments = weakGateways.Select(x => x.deployment).ToList();
@@ -227,13 +307,25 @@ namespace Risk.Players.RS
             return deployments.Sum(x => x.Troops);
         }
 
-        private int DeployOffence(TurnManager turnManager, GameInformation gameInformation, RiskAnalysis analysis, int availableTroops)
+        private static int GetTroopTarget(GameInformation gameInformation, Country country)
         {
-            var deployments = (from continent in analysis.Continents.Where(x => !x.IsOwned)
-                               from country in continent.MyCountries
-                               where country.IsUnderAttack()
-                               orderby country.GetThreatLevel()
-                               select new Deployment(turnManager) { ToCountry = country }).ToList();
+            var enemies = gameInformation.GetAdjacentCountriesWithDifferentOwner(country).ToList();
+            if (enemies.Count == 0) return country.IsContinentGateway() ? 4 : 2;
+            if (enemies.Count == 1) return enemies[0].NumberOfTroops + 3;
+            return enemies.Sum(x => x.NumberOfTroops) + 1;
+        }
+
+        private int DeployOffence(TurnManager turnManager, RiskAnalysis analysis, int availableTroops)
+        {
+            if (availableTroops == 0) return 0;
+
+            var deployments =
+                (// find continent where we're strongest, but not owned
+                 from continent in analysis.Continents.Where(x => !x.IsOwned).OrderByDescending(x => x.Dominance)
+                 // reinforce weakest countries first.
+                 from country in continent.MyCountries.OrderByDescending(x => x.GetThreatLevel())
+                 where country.IsUnderAttack()
+                 select new Deployment(turnManager) { ToCountry = country }).Take(2).ToList();
 
             if (availableTroops == 0 || deployments.Count == 0)
                 return 0;
@@ -253,17 +345,62 @@ namespace Risk.Players.RS
             return deployments.Sum(x => x.Troops);
         }
 
-        private void DoMoveAnalysis(GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoMoveAnalysis(TurnManager turnManager, RiskAnalysis analysis)
         {
+            var gameinfo = turnManager.GetGameInfo();
+
+            var minDefenders = 3;
+            var sources = gameinfo.GetAllCountriesOwnedByPlayer(_player)
+                        .Where(x => x.NumberOfTroops > minDefenders && !x.IsUnderAttack() && !x.IsContinentGateway())
+                        .ToList();
+            var movable = 7;
+            var targets = new HashSet<Country>();
+            foreach (var source in sources)
+            {
+                var target =
+                    gameinfo.GetAdjacentCountriesWithSameOwner(source)
+                            .Where(x => x.IsUnderAttack())
+                            .OrderBy(x => x.GetThreatLevel())
+                            .FirstOrDefault();
+                var toMove = Math.Min(movable, (source.NumberOfTroops - minDefenders));
+                if (toMove > 0)
+                {
+                    if (target == null)
+                    {
+                        var source1 = source;
+                        target = gameinfo.GetAdjacentCountriesWithSameOwner(source)
+                                         .Where(x => x.IsContinentGateway()
+                                                     || source1.NumberOfTroops - x.NumberOfTroops > minDefenders)
+                                         .OrderBy(x => x.NumberOfTroops)
+                                         .FirstOrDefault(x => targets.Add(x));
+                        if (target != null)
+                        {
+                            toMove = Math.Min(toMove, minDefenders);
+                        }
+                    }
+                    if (target != null)
+                    {
+                        movable = Math.Max(0, movable - toMove);
+                        analysis.Moves.Add(new Move(turnManager)
+                        {
+                            FromCountry = source,
+                            ToCountry = target,
+                            Troops = toMove
+                        });
+                    }
+                }
+            }
         }
 
-        private IEnumerable<Country> FindImportantCountries(GameInformation gameInformation, RiskAnalysis analysis)
+        private void DoImportantCountryAnalysis(TurnManager turnManager, RiskAnalysis analysis)
         {
-            return analysis.Attacks.Select(x => x.FromCountry)
+            var countries = analysis.Attacks.Select(x => x.FromCountry)
                            .Concat(analysis.Moves.Select(x => x.FromCountry))
                            .Concat(analysis.Deployments.Select(x => x.ToCountry))
                            .Concat(
-                               gameInformation.GetAllCountriesOwnedByPlayer(_player).Where(x => x.IsContinentGateway()));
+                               turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(_player).Where(x => x.IsContinentGateway()));
+
+            analysis.ImportantCountries.AddRange(countries);
         }
     }
 }
