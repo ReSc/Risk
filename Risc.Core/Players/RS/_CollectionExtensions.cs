@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Risk.Players.RS
 {
-    /// <summary> some usefull collection extensions </summary>
+    /// <summary> some useful collection extensions </summary>
     public static class _CollectionExtensions
     {
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)

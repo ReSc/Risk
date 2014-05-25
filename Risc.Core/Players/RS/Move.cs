@@ -5,11 +5,11 @@ namespace Risk.Players.RS
 {
     public class Move
     {
-        private readonly TurnManager _turnManager;
+        private readonly TurnManager turnManager;
 
         public Move(TurnManager turnManager)
         {
-            _turnManager = turnManager;
+            this.turnManager = turnManager;
         }
 
         public Country FromCountry { get; set; }
@@ -18,7 +18,7 @@ namespace Risk.Players.RS
 
         public void Execute()
         {
-            _turnManager.MoveTroops(FromCountry, ToCountry, Troops);
+            turnManager.MoveTroops(FromCountry, ToCountry, Troops);
         }
     }
 }

@@ -5,11 +5,11 @@ namespace Risk.Players.RS
 {
     public class Attack
     {
-        private readonly TurnManager _turnManager;
+        private readonly TurnManager turnManager;
 
         public Attack(TurnManager turnManager)
         {
-            _turnManager = turnManager;
+            this.turnManager = turnManager;
         }
 
         public Country FromCountry { get; set; }
@@ -19,7 +19,7 @@ namespace Risk.Players.RS
 
         public void Execute()
         {
-            Succeeded = _turnManager.Attack(FromCountry, ToCountry, Troops);
+            Succeeded = turnManager.Attack(FromCountry, ToCountry, Troops);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace Risk.Core
 {
     public class GameManager
     {
-        private  readonly Statistics Statistics;
+        private  readonly Statistics statistics;
 
         public List<IAction> Actions { get; private set; }
         public List<Country> Countries { get; private set; }
@@ -42,7 +42,7 @@ namespace Risk.Core
             Actions = new List<IAction>();
             Log = new ActionLogger(this);
             Countries = new TerrainGenerator().Generate();
-            Statistics = statistics;
+            this.statistics = statistics;
             if (init) Initialize(settings);
         }
 
@@ -126,7 +126,7 @@ namespace Risk.Core
                                 string.Format("----- {0} has won the game with {1} countries, turn limit reached",
                                               winner.Name,
                                               turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(winner).Count));
-                            Statistics.AddCurrentGameResults(winner);
+                            statistics.AddCurrentGameResults(winner);
                             GameEnded = true;
                             return;
                         }
@@ -162,7 +162,7 @@ namespace Risk.Core
                     {
                         Log.AddMessage(string.Format("----- {0} has won the game with {1} countries", CurrentPlayer.Name,
                                                      turnManager.GetGameInfo().GetAllCountriesOwnedByPlayer(CurrentPlayer).Count));
-                        Statistics.AddCurrentGameResults(CurrentPlayer);
+                        statistics.AddCurrentGameResults(CurrentPlayer);
                         GameEnded = true;
                         return;
                     }
