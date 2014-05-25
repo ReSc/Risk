@@ -11,9 +11,9 @@ namespace Risk.Players.RS
         {
             return from c in info.GetAllCountries()
                    group c by c.Continent
-                   into grp
-                   where grp.All(x => x.Owner == player)
-                   select grp.Key;
+                       into grp
+                       where grp.All(x => x.Owner == player)
+                       select grp.Key;
         }
 
         public static bool IsContinentGateway(this Country c)
@@ -38,12 +38,15 @@ namespace Risk.Players.RS
 
         public static int GetThreatLevel(this Country c)
         {
-            return c.GetAttackingCountries().Max(x => x.NumberOfTroops) - c.NumberOfTroops;
+            var attackingCountries = c.GetAttackingCountries().ToList();
+            if (attackingCountries.Count == 0)
+                return -c.NumberOfTroops;
+            return attackingCountries.Max(x => x.NumberOfTroops) - c.NumberOfTroops;
         }
 
         public static IEnumerable<Country> GetAttackingCountriesByDescendingThreatLevel(this Country c)
         {
-            return c.GetAttackingCountries().OrderBy(x => x.NumberOfTroops);
+            return c.GetAttackingCountries().OrderByDescending(x => x.NumberOfTroops);
         }
     }
 }
