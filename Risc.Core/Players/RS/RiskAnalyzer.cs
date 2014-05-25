@@ -196,7 +196,7 @@ namespace Risk.Players.RS
                                 // make it a reasonable large margin.
                                 let troopTarget =
                                     gameInformation.GetAdjacentCountriesWithDifferentOwner(country)
-                                                   .Sum(x => x.NumberOfTroops) + 3
+                                                   .Max(x => x.NumberOfTroops) + 3
                                 where country.NumberOfTroops < troopTarget
                                 select new
                                     {
