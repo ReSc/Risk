@@ -1,9 +1,9 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Risk", "Risk\Risk.csproj", "{FDBD5A94-B4E8-4B9A-8A6C-875337BED33B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Risk.Core", "Risc.Core\Risk.Core.csproj", "{DC41B1E2-C17C-4E24-B284-8519742B3BC3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Risk.Core", "Risk.Core\Risk.Core.csproj", "{DC41B1E2-C17C-4E24-B284-8519742B3BC3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{36DAAD8F-4D15-4D46-B527-EFF822E480E4}"
 	ProjectSection(SolutionItems) = preProject

@@ -226,7 +226,7 @@ namespace Risk.Players.RS
             {
                 availableTroops = Math.Min(availableTroops, 3);
                 var whatchamacallit = downUnder.MyCountries.First(x => x.IsContinentGateway());
-                var minAussieDefenders = 10;
+                var minAussieDefenders = 6;
                 if (whatchamacallit.IsUnderAttack() || whatchamacallit.NumberOfTroops < minAussieDefenders)
                 {
                     analysis.Deployments.Add(new Deployment(turnManager)

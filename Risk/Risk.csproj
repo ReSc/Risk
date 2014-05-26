@@ -149,7 +149,7 @@
     <Content Include="Views\Home\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Risc.Core\Risk.Core.csproj">
+    <ProjectReference Include="..\Risk.Core\Risk.Core.csproj">
       <Project>{DC41B1E2-C17C-4E24-B284-8519742B3BC3}</Project>
       <Name>Risk.Core</Name>
     </ProjectReference>

@@ -11,7 +11,7 @@ namespace Risk.Core
         public int MaximumAmountOfTurns { get; set; }
         public List<IPlayer> Players { get; set; }
 
-        public Settings() : this(new IPlayer[] { new Aad(), new BlitzKrieg(), new Pros(), new Remco(), }, 25, 100) { }
+        public Settings() : this(new IPlayer[] {  new BlitzKrieg(), new Pros(), new Pros(), new Remco(), }, 25, 100) { }
 
         public Settings(IEnumerable<IPlayer> players, int countriesRequiredToWin, int maximumAmountOfTurns)
         {
